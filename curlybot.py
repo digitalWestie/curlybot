@@ -5,14 +5,17 @@ from slackclient import SlackClient
 
 # curlybot's ID as an environment variable
 BOT_ID = os.environ.get("BOT_ID")
-
-# constants
 AT_BOT = "<@" + BOT_ID + ">"
-EXAMPLE_COMMAND = "do"
+
 
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 
+def index_cmd(resource): 
+  return "Here's a list of "+resource+" you wanted: \n- item 1\n item 2"
+
+BOTCOMMANDS = {"list all the ": index_cmd, "give me all the ": index_cmd}
+#IDEA: split at the first 'the' to find the object
 
 def handle_command(command, channel):
   """
@@ -20,12 +23,15 @@ def handle_command(command, channel):
     are valid commands. If so, then acts on the commands. If not,
     returns back what it needs for clarification.
   """
-  response = "Not sure what you mean. Use the *" + EXAMPLE_COMMAND + \
-         "* command with numbers, delimited by spaces."
-  if command.startswith(EXAMPLE_COMMAND):
-    response = "Sure...write some more code then I can do that!"
-  slack_client.api_call("chat.postMessage", channel=channel,
-              text=response, as_user=True)
+  response = "Not sure what you mean. Use the *list all the " + \
+         "* command with a resource, delimited by spaces."
+
+  for cmd in BOTCOMMANDS.keys():
+    if command.startswith(cmd):
+      split = command.encode('utf-8').split(cmd)
+      response = BOTCOMMANDS[cmd](split[1])
+
+  slack_client.api_call("chat.postMessage", channel=channel, text=response, as_user=True)
 
 
 def parse_slack_output(slack_rtm_output):
