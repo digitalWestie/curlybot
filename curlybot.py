@@ -1,21 +1,49 @@
 import os
 import time
+import json
 from slackclient import SlackClient
-
+import pycurl
+from io import BytesIO
 
 # curlybot's ID as an environment variable
 BOT_ID = os.environ.get("BOT_ID")
 AT_BOT = "<@" + BOT_ID + ">"
 
-
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 
-def index_cmd(resource): 
-  return "Here's a list of "+resource+" you wanted: \n- item 1\n item 2"
+def index_cmd(resource):
+  result = make_request(resource)
+  if (result == None):
+    return "Sorry! Couldn't return a list of " + resource + "."
+  else:
+    return "Here's a list of "+resource+" you wanted: \n```\n"+result+"\n```"
 
 BOTCOMMANDS = {"list all the ": index_cmd, "give me all the ": index_cmd}
 #IDEA: split at the first 'the' to find the object
+
+HOST = 'https://api.github.com' 
+PATH = '/'
+
+#'users/digitalWestie/repos'
+
+def make_request(resource):
+  url = HOST+PATH+resource
+  print 'Making a request to ' + url
+  data = BytesIO()
+  c = pycurl.Curl()
+  c.setopt(c.URL, url)
+  c.setopt(c.WRITEFUNCTION, data.write)
+  c.perform()
+  c.close()
+  r = data.getvalue()
+  data.close()
+  try:
+    jsondata = json.loads(r)
+    return json.dumps(jsondata,  sort_keys=True, indent=2, separators=(',', ': '))
+  except: 
+    print "couldn't parse json from request to " + url
+
 
 def handle_command(command, channel):
   """
