@@ -29,13 +29,17 @@ def api_info_cmd():
   return "Here's some details:\nENDPOINT: "+HOST+PATH
 
 
+def quit_cmd():
+  slack_client.api_call("chat.postMessage", channel=channel, text="Bye!", as_user=True)
+  exit()
+
+
 FULLCOMMANDS = {
   "tell me about the API you're using": api_info_cmd,
   "what API?": api_info_cmd,
   "config info?": api_info_cmd,
-  "that'll do pig": exit,
-  "disconnect": exit,
-  "exit": exit
+  "that'll do pig": quit_cmd,
+  "disconnect": quit_cmd
 }
 
 PARAMCOMMANDS = {
