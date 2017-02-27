@@ -12,6 +12,11 @@ AT_BOT = "<@" + BOT_ID + ">"
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 
+HOST = 'https://api.github.com' 
+PATH = '/'
+
+#'users/digitalWestie/repos'
+
 def index_cmd(resource):
   result = make_request(resource)
   if (result == None):
@@ -19,13 +24,27 @@ def index_cmd(resource):
   else:
     return "Here's a list of "+resource+" you wanted: \n```\n"+result+"\n```"
 
-BOTCOMMANDS = {"list all the ": index_cmd, "give me all the ": index_cmd}
+
+def api_info_cmd():
+  return "Here's some details:\nENDPOINT: "+HOST+PATH
+
+
+FULLCOMMANDS = {
+  "tell me about the API you're using": api_info_cmd,
+  "what API?": api_info_cmd,
+  "config info?": api_info_cmd,
+  "that'll do pig": exit,
+  "disconnect": exit,
+  "exit": exit
+}
+
+PARAMCOMMANDS = {
+  "list all the ": index_cmd, 
+  "give me all the ": index_cmd,
+  "give me a list of the ": index_cmd
+}
+
 #IDEA: split at the first 'the' to find the object
-
-HOST = 'https://api.github.com' 
-PATH = '/'
-
-#'users/digitalWestie/repos'
 
 def make_request(resource):
   url = HOST+PATH+resource
@@ -51,13 +70,19 @@ def handle_command(command, channel):
     are valid commands. If so, then acts on the commands. If not,
     returns back what it needs for clarification.
   """
+  #command = command.lower()
+  command = command.encode('utf-8')
   response = "Not sure what you mean. Use the *list all the " + \
          "* command with a resource, delimited by spaces."
 
-  for cmd in BOTCOMMANDS.keys():
-    if command.startswith(cmd):
-      split = command.encode('utf-8').split(cmd)
-      response = BOTCOMMANDS[cmd](split[1])
+  for cmd in PARAMCOMMANDS.keys():
+    if command.startswith(cmd.lower()):
+      split = command.split(cmd)
+      response = PARAMCOMMANDS[cmd](split[1])
+
+  for cmd in FULLCOMMANDS.keys():
+    if command == cmd.lower():
+      response = FULLCOMMANDS[cmd]()
 
   slack_client.api_call("chat.postMessage", channel=channel, text=response, as_user=True)
 
